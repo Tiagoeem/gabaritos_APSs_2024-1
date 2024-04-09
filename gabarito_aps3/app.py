@@ -31,12 +31,15 @@ def filtra_livro_id(id):
 
         book = filter_table(cursor, 'livros', 'id', {id: '=',})
         if book == []:
+            conn.close()
             return {"Erro: ": 'Livro não encontrado'}, 404
 
+        conn.close()
         return book, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
 
 #Apaga um livro a partir do ID
@@ -47,14 +50,17 @@ def apaga_livro(id):
 
         book = filter_table(cursor, "livros", "id", {id: "="})
         if book == []:
+            conn.close()
             return {"Erro: ": 'Livro não encontrado'}, 404
 
         table_remove(cursor, 'livros', id)
         conn.commit()
+        conn.close()
         return {"Sucesso: ": f"Livro {book} apagado com sucesso"}, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
     
 #Printa todos os livros e cadastra novos
@@ -74,6 +80,7 @@ def cadastra_livro():
                 table = print_table(cursor, 'livros')
 
             if table == []:
+                conn.close()
                 return {"Erro:": 'Nenhum livro encontrado'}, 404
 
             #Esta etapa é OPCIONAL. Aqui eu crio uma response customizada, só faço isso para manter a ordem do json de retorno.
@@ -85,6 +92,7 @@ def cadastra_livro():
                 mimetype='application/json'
             )
 
+            conn.close()
             return response #Poderia ser "return table, 200" sem problemas
 
         if request.method == 'POST':
@@ -102,6 +110,7 @@ def cadastra_livro():
             # }
 
             if 'Livro' not in request_data:
+                conn.close()
                 return {"Erro:": 'Dados não puderam ser lidos, verifique as informações'}, 400
             
             #Cria a tupla de items
@@ -110,6 +119,7 @@ def cadastra_livro():
             #Verifica se todas as informações passadas dentro de Livro existem na nossa tabela, para não receber infos faltando, nem excedentes.
             for field in livro_info:
                 if column_exists(cursor, "livros", field) == False:
+                    conn.close()
                     return {"Erro:": 'Campos invalidos fornecidos'}, 400
 
 
@@ -123,12 +133,15 @@ def cadastra_livro():
             conn.commit()
 
             if added_item:
+                conn.close()
                 return {"Sucesso: ": f'livro {titulo} adicionado com sucesso'}, 201
             else:
+                conn.close()
                 return {"Erro: ": f'livro {titulo} ja existente'}, 400
             
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
     
 
@@ -142,9 +155,11 @@ def edita_livro(id):
         #Bloco que verifica se o JSon é valido
         book = filter_table(cursor, "livros", "id", {id: "="})
         if book == []:
+            conn.close()
             return {"Erro: ": 'Livro não existente'}, 400
         if 'Livro' not in request_data:
-                return {"Erro:": 'Dados não puderam ser lidos, verifique as informações'}, 400
+            conn.close()
+            return {"Erro:": 'Dados não puderam ser lidos, verifique as informações'}, 400
         
 
         #Bloco que edita a DB
@@ -167,13 +182,16 @@ def edita_livro(id):
             if column_exists(cursor, "livros", field):
                 table_edit(conn, cursor, 'livros', field, livro_info.get(field, ''), id)
             else:
+                conn.close()
                 return {"Erro: ": 'Coluna ou informação não existente foi passada'}, 400
         conn.commit()
 
+        conn.close()
         return {"Sucesso: ": f'Livro {book} editado com sucesso'}, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
     
 
@@ -191,6 +209,7 @@ def cadastra_user():
             table = print_table(cursor, 'usuarios')
 
             if table == []:
+                conn.close()
                 return {"Erro:": 'Nenhum usuario encontrado'}, 404
 
             #Esta etapa é OPCIONAL. Aqui eu crio uma response customizada, só faço isso para manter a ordem do json de retorno.
@@ -202,6 +221,7 @@ def cadastra_user():
                 mimetype='application/json'
             )
 
+            conn.close()
             return response #Poderia ser "return table, 200" sem problemas
 
         if request.method == 'POST':
@@ -218,11 +238,13 @@ def cadastra_user():
             # }
 
             if 'Usuario' not in request_data:
+                conn.close()
                 return {"Erro:": 'Dados não puderam ser lidos, verifique as informações'}, 400
             
             #Verifica se todas as informações passadas dentro de Usuario existem.
             for field in request_data.get('Usuario'):
                 if column_exists(cursor, "usuarios", field) == False:
+                    conn.close()
                     return {"Erro:": 'Campos invalidos fornecidos'}, 400
 
             
@@ -238,12 +260,15 @@ def cadastra_user():
             conn.commit()
 
             if added_item:
+                conn.close()
                 return {"Sucesso: ": f'Usuario adicionado com sucesso'}, 201
             else:
+                conn.close()
                 return {"Erro: ": f'Usuario ja existente'}, 400
             
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
     
 
@@ -253,11 +278,14 @@ def filtra_user_id(id):
         cursor = conn.cursor()
         user = filter_table(cursor, 'usuarios', 'id', {id: '=',})
         if user == []:
+            conn.close()
             return {"Erro: ": 'Usuario não encontrado'}, 404
+        conn.close()
         return user, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
 
 @app.route('/usuarios/<int:id>', methods=['DELETE'])
@@ -266,14 +294,17 @@ def apaga_user(id):
         cursor = conn.cursor()
         usuario = filter_table(cursor, 'usuarios', 'id', {id: '='})
         if usuario == []:
+            conn.close()
             return {"Erro: ": 'Usuario não encontrado'}, 404
 
         table_remove(cursor, 'usuarios', id)
         conn.commit()
+        conn.close()
         return {"Sucesso: ": f"Usuario de ID {id} apagado com sucesso"}, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
     
 
@@ -286,8 +317,10 @@ def edita_user(id):
         #Bloco que verifica se o JSon é valido
         user = filter_table(cursor, "usuarios", "id", {id: "="})
         if user == []:
+            conn.close()
             return {"Erro: ": 'Usuario não encontrado'}, 404
         if 'Usuario' not in request_data:
+            conn.close()
             return {"Erro:": 'Dados não puderam ser lidos, verifique as informações'}, 400
         
 
@@ -314,22 +347,27 @@ def edita_user(id):
                 if field == 'Email':
                     email_existente = filter_table(cursor, 'usuarios', 'Email', {user_info[field]: "="})
                     if email_existente != []:
+                        conn.close()
                         return {"Erro: ": 'O email fornecido ja existe, portanto as edições foram suspensas'}, 400
                     
                 if field == 'cpf':
                     email_existente = filter_table(cursor, 'usuarios', 'cpf', {user_info[field]: "="})
                     if email_existente != []:
+                        conn.close()
                         return {"Erro: ": 'O cpf fornecido ja existe, portanto as edições foram suspensas'}, 400
 
                 #Segue as edições normalmente caso não ative o if ou o email seja novo
                 table_edit(conn, cursor, 'usuarios', field, user_info.get(field, ''), id)
             else:
+                conn.close()
                 return {"Erro: ": 'Coluna ou informação não existente foi passada'}, 400
         conn.commit()
+        conn.close()
         return {"Sucesso: ": f'Usuario de ID {id} editado com sucesso'}, 200
     
     except psycopg2.Error as e:
         conn.rollback()
+        conn.close()
         return {"Erro: ": e}, 500
 
 
